@@ -18,13 +18,13 @@ Lexer::Lexer(std::istream& input) : m_InputStream(input) {}
 
 TokenType Lexer::identifyToken(const std::string& tokenString)
 {
-    std::regex regPattern("r[1-9][1-9]?");
+    std::regex registerPattern("r[1-9][1-9]?");
     if(g_TokenMap[tokenString] == 1)
     {
         return TokenType::INSTRUCTION;
     }
     /* if(g_TokenMap[tokenString] == 2) */
-    if(std::regex_match(tokenString, regPattern))
+    if(std::regex_match(tokenString, registerPattern))
     {
         return TokenType::REGISTER;
     }
