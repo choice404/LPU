@@ -1,178 +1,334 @@
 /*
-Copyright (C) 2023 Lysus
-See end of file for extended copyright information
-*/
+ * Copyright (C) 2024 Austin Choi
+ * See end of file for extended copyright information
+ */
 
 // Include header files
+#include <iostream>
 #include "../header/lexer.h"
-#include "../header/ISA.h"
 
 // Preprocessor macro
 #define Log(x) (std::cout << x << std::endl)
 
-Token::Token() {};
+/**
+ * ILLEGAL
+ * END_OF_FILE
+ * INSTRUCTION
+ * REGISTER
+ * MEMORY_ADDRESS
+ * CONSTANT
+ * IMMEDIATE
+ * LABEL
+ * DIRECTIVE
+ * COMMA
+ * COMMENT
+ * SEMICOLON
+ * OPERATOR
+ * WHITESPACE
+ */
 
-Token::Token(TokenType type, const std::string& lexeme, size_t line) : m_Type(type), lexeme(lexeme), m_Line(line) {}
-
-Lexer::Lexer(std::istream& input) : m_InputStream(input) {}
-
-TokenType Lexer::identifyToken(const std::string& tokenString)
+std::string TokenMap[TOKEN_COUNT] =
 {
-    std::regex registerPattern("r[1-9][1-9]?");
-    if(g_TokenMap[tokenString] == 1)
+    "ILLEGAL",
+    "END_OF_FILE",
+    "INSTRUCTION",
+    "REGISTER",
+    "MEMORY_ADDRESS",
+    "CONSTANT",
+    "IMMEDIATE",
+    "LABEL",
+    "DIRECTIVE",
+    "COMMA",
+    "COMMENT",
+    "SEMICOLON",
+    "OPERATOR",
+    "WHITESPACE",
+};
+
+// Constructors and destructors
+
+/**
+ * @description: Constructor for the lexer class
+ * @param {std::string} input - Assembly code as input to be lexed
+ * @return {void}
+ */
+Lexer::Lexer(std::string input) : m_Input(input), m_Position(0), m_NextPosition(1), m_Ch(0)
+{
+    this->readChar();
+};
+
+/**
+ * @description: Destructor for the lexer class
+ * @param {void}
+ * @return {void}
+ */
+Lexer::~Lexer() {}
+
+// Public methods
+
+/**
+ * @description: Returns the next token in the input
+ * @param {void}
+ * @return {Token} - The next token in the input
+ */
+Token Lexer::nextToken()
+{
+    Token tok;
+
+    switch(this->m_Ch)
     {
-        return TokenType::INSTRUCTION;
+    case ',':
+        tok.Literal = ",";
+        tok.Type = TokenType::COMMA;
+        /* tok = createToken(TokenType::COMMA, ","); */
+        break;;
+    case ';':
+        tok.Literal = ";";
+        tok.Type = TokenType::SEMICOLON;
+        /* tok = createToken(TokenType::SEMICOLON, ";"); */
+        break;;
+    case '_':
+        tok.Literal = readLabel();
+        tok.Type = TokenType::LABEL;
+        break;;
+    case '#':
+        tok.Literal = readComment();
+        tok.Type = TokenType::COMMENT;
+        break;;
+    case '\n':
+    case ' ':
+    case '\t':
+    /* case '\r': */
+        tok.Literal = this->m_Ch;
+        tok.Type = TokenType::WHITESPACE;
+        break;;
+    case 'R':
+    /* case 'r': */
+        if(this->isDigit(this->peekChar()))
+        {
+            tok.Literal = readRegister();
+            tok.Type = TokenType::REGISTER;
+            return tok;
+        }
+    default:
+        if(this->isLetter(this->m_Ch))
+        {
+          tok.Literal = readWord();
+          if(this->peekChar() == ':')
+          {
+              tok.Type = TokenType::LABEL;
+          }
+          else
+          {
+              tok.Type = TokenType::INSTRUCTION;
+          }
+        }
+        else if(this->isDigit(this->m_Ch))
+        {
+            tok.Literal = readImmediate();
+            tok.Type = TokenType::IMMEDIATE;
+        }
+        else
+        {
+            tok.Literal = this->m_Ch;
+            tok.Type = TokenType::ILLEGAL;
+        }
+        break;;
     }
-    /* if(g_TokenMap[tokenString] == 2) */
-    if(std::regex_match(tokenString, registerPattern))
+    this->readChar();
+    return tok;
+}
+
+// Private methods
+
+/**
+ * @description: Moves the position of the lexer forward
+ * @param {void}
+ * @return {void}
+ */
+void Lexer::readChar()
+{
+    if(this->m_NextPosition >= this->m_Input.length())
     {
-        return TokenType::REGISTER;
+        this->m_Ch = 0;
     }
-    if(tokenString.back() == ':') { return TokenType::LABEL; }
-    else if(tokenString.front() == '.') { return TokenType::DIRECTIVE; }
-    else if(isdigit(tokenString.front())) { return TokenType::CONSTANT; }
-    else if((tokenString.front() == '"' && tokenString.back() == '"') || (tokenString.front() == '\'' && tokenString.back() == '\''))
+    else
     {
-        return TokenType::STRING;
+        this->m_Ch = this->m_Input[this->m_NextPosition];
     }
-    else if(tokenString.find_first_not_of(" \t\r\n") == std::string::npos) { return TokenType::WHITESPACE; }
-    else if(tokenString == "\n") { return TokenType::NEWLINE; }
-    else if(tokenString.front() == ';' || tokenString.front() == '#') { return TokenType::COMMENT; }
-    else { return TokenType::ENDOFFILE; }
+    this->m_Position = this->m_NextPosition++;
 }
 
-Token Lexer::tokenize(std::string code, size_t line)
+/**
+ * @description: Creates a token using a given type and literal
+ * @param {TokenType} type - The type of the token
+ * @param {std::string} literal - The literal value of the token
+ * @return {Token}
+ */
+Token createToken(TokenType type, std::string literal)
 {
-    Token x;
-    m_Code += code;
-    m_CodeString.push_back(code);
-    x.m_Type = identifyToken(code);
-    x.m_Line = line;
-    return x;
+    Token tok;
+    tok.Type = type;
+    tok.Literal = literal;
+    return tok;
 }
 
-std::vector<Token> Lexer::tokenize()
+/**
+ * @description: Checks if a character is a letter
+ * @param {char} ch - The character to check
+ * @return {bool} - True if the character is a letter, false otherwise
+ */
+bool Lexer::isLetter(char ch)
 {
-    std::vector<Token> tokens;
-    size_t line = 0;
-    while(!m_InputStream.eof())
+    return((ch > 'a' && ch < 'z') || (ch > 'A' && ch < 'Z'));
+}
+
+/**
+ * @description: Checks if a character is a digit
+ * @param {char} ch - The character to check
+ * @return {bool} - True if the character is a digit, false otherwise
+ */
+bool Lexer::isDigit(char ch)
+{
+    return(ch >= '0' && ch <= '9');
+}
+
+/**
+ * @description: Reads a number from the input
+ * @param {void}
+ * @return {std::string} - The number read from the input
+ */
+char Lexer::peekChar()
+{
+    if(this->m_NextPosition >= this->m_Input.length())
     {
-        line++;
-        char currentChar = m_InputStream.get();
-        std::string lexeme(1, currentChar);
-        if(currentChar == ';' || currentChar == '#')
-        {
-            while(!m_InputStream.eof() && m_InputStream.peek() != '\n')
-            {
-                lexeme += m_InputStream.get();
-            }
-            tokens.push_back(Token(TokenType::COMMENT, lexeme, line));
-        }
-        else if(isspace(currentChar))
-        {
-            continue;
-        }
-        else if(currentChar == '\n')
-        {
-            tokens.push_back(Token(TokenType::NEWLINE, lexeme, line));
-        }
-        else if(currentChar == '"' || currentChar =='\'')
-        {
-            char quote = currentChar;
-            while(!m_InputStream.eof() && m_InputStream.peek() != quote)
-            {
-                currentChar = m_InputStream.get();
-                lexeme += currentChar;
-            }
-            if(!m_InputStream.eof())
-            {
-                lexeme += m_InputStream.get();
-            }
-        }
-        else if(currentChar == ':')
-        {
-            while(!m_InputStream.eof() && isalnum(m_InputStream.peek()))
-            {
-                currentChar = m_InputStream.get();
-                lexeme += currentChar;
-            }
-            tokens.push_back(Token(TokenType::LABEL, lexeme, line));
-        }
-        else if(currentChar == '.')
-        {
-            while(!m_InputStream.eof() && isalnum(m_InputStream.peek()))
-            {
-                currentChar = m_InputStream.get();
-                lexeme += currentChar;
-            }
-            tokens.push_back(Token(TokenType::DIRECTIVE, lexeme, line));
-        }
-        else if(isdigit(currentChar))
-        {
-            while(!m_InputStream.eof() && isdigit(m_InputStream.peek()))
-            {
-                currentChar = m_InputStream.get();
-                lexeme += currentChar;
-            }
-        }
-        else if(isalpha(currentChar))
-        {
-            while(!m_InputStream.eof() && isalnum(m_InputStream.peek()))
-            {
-                currentChar = m_InputStream.get();
-                lexeme += currentChar;
-            }
-            if(isInstruction(lexeme))
-            {
-                tokens.push_back(Token(TokenType::INSTRUCTION, lexeme, line));
-            }
-            else if(isRegister(lexeme))
-            {
-                tokens.push_back(Token(TokenType::REGISTER, lexeme, line));
-            }
-            else if(isLabel(lexeme))
-            {
-                tokens.push_back(Token(TokenType::LABEL, lexeme, line));
-            }
-            else
-            {
-                tokens.push_back(Token(TokenType::IDENTIFIER , lexeme, line));
-            }
-        }
+        return 0;
     }
-    tokens.push_back(Token(TokenType::ENDOFFILE, "", line++));
-
-    return tokens;
-}
-
-bool Lexer::isLabel(const std::string& lexeme)
-{
-    for(char c : lexeme)
+    else
     {
-        if(!isalnum(c) && c != '_') { return false; }
+        return this->m_Input[this->m_NextPosition];
     }
-    return true;
 }
 
-bool Lexer::isInstruction(const std::string& lexeme)
+/**
+ * @description: Reads a number from the input
+ * @param {void}
+ * @return {std::string} - The number read from the input
+ */
+std::string Lexer::readImmediate()
 {
-    if(g_TokenMap[lexeme] == 1) { return true; }
-    return false;
+    size_t position = this->m_Position;
+    while(this->isDigit(this->m_Ch))
+    {
+        this->readChar();
+    }
+    return this->m_Input.substr(position, this->m_Position - position);
 }
 
-bool Lexer::isRegister(const std::string& lexeme)
+/**
+ * @description: Reads an instruction from the input
+ * @param {void}
+ * @return {std::string} - The instruction read from the input
+ */
+std::string Lexer::readInstruction()
 {
-    if(g_TokenMap[lexeme] == 2) { return true; }
-    return false;
+    size_t position = this->m_Position;
+    while(this->isLetter(this->m_Ch) || this->isDigit(this->m_Ch))
+    {
+        this->readChar();
+    }
+    return this->m_Input.substr(position, this->m_Position - position);
 }
+
+/**
+ * @description: Reads a register from the input
+ * @param {void}
+ * @return {std::string} - The register read from the input
+ */
+std::string Lexer::readRegister()
+{
+    size_t position = this->m_Position;
+    this->readChar();
+    while(this->isDigit(this->m_Ch))
+    {
+        this->readChar();
+    }
+    return this->m_Input.substr(position, this->m_Position - position);
+}
+
+/**
+ * @description: Reads a label from the input
+ * @param {void}
+ * @return {std::string} - The label read from the input
+ */
+std::string Lexer::readLabel()
+{
+    size_t position = this->m_Position;
+    while(this->isLetter(this->m_Ch) || this->isDigit(this->m_Ch))
+    {
+        this->readChar();
+    }
+    return this->m_Input.substr(position, this->m_Position - position);
+}
+
+/**
+ * @description: Reads a comment from the input
+ * @param {void}
+ * @return {std::string} - The comment read from the input
+ */
+std::string Lexer::readComment()
+{
+    size_t position = this->m_Position;
+    while(this->m_Ch != '\n' && this->m_Ch != 0)
+    {
+        this->readChar();
+    }
+    return this->m_Input.substr(position, this->m_Position - position);
+}
+
+/**
+ * @description: Reads a constant from the input
+ * @param {void}
+ * @return {std::string} - The constant read from the input
+ */
+std::string Lexer::readConstant()
+{
+    size_t position = this->m_Position;
+    while(this->isDigit(this->m_Ch))
+    {
+        this->readChar();
+    }
+    return this->m_Input.substr(position, this->m_Position - position);
+}
+
+/**
+ * @description: Reads a word from the input
+ * @param {void}
+ * @return {std::string} - The word read from the input
+ */
+std::string Lexer::readWord()
+{
+    size_t position = this->m_Position;
+    while(this->isLetter(this->m_Ch) || this->isDigit(this->m_Ch))
+    {
+        this->readChar();
+    }
+    return this->m_Input.substr(position - 1, this->m_Position - (position - 1));
+}
+
+/**
+ * @description: Returns the current position of the lexer
+ * @param {void}
+ * @return {size_t} - The current position of the lexer
+ */
+int Lexer::getPosition() { return this->m_Position; }
 
 /*
-Copyright (C) 2023 Lysus
-
-cpp_LPUAssembler
-
-Assembler for the LPU V1 CPU Instruction Set Architecture
-
-This code is licensed under the GNU General Public License v3.0
-Please see the LICENSE file in the root directory of this project for the full license details.
-*/
+ * Copyright (C) 2024 Austin Choi
+ * 
+ * lpu
+ * A custom 8 bit pure harvard architecture CPU built in minecraft. This project will consist of the specifications of the CPU as well as an external assembler that will assemble code down to the target machine code as well as a compiler for a custom language called CMine that will compile down to the target assembly code then be assembled into the machine code. This langugae will be a subset of C just to make develping for the CPU easier
+ *
+ * This code is licensed under the GNU General Public License 3.0.
+ * Please see the LICENSE file in the root directory of this project for the full license details.
+ */

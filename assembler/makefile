@@ -7,7 +7,7 @@ OUTFILE		= ./lpuAssembler
 all: a.out
 
 a.out: main.cpp
-	g++ $(MAIN) $(INCLUDES) -o $(OUTFILE)
+	g++ -std=c++11 $(MAIN) $(INCLUDES) -o $(OUTFILE)
 
 clean:
 	rm -rf $(OUTFILE)

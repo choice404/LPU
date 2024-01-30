@@ -1,4 +1,4 @@
-/**
+/*
 Copyright (C) 2023 Lysus
 See end of file for extended copyright information
 */
@@ -6,7 +6,7 @@ See end of file for extended copyright information
 // Include header files
 #include <iostream>
 #include <fstream>
-#include "./header/lexer.h"
+#include "./header/old_lexer.h"
 
 // Preprocessor macro
 #define Log(x) (std::cout << x << std::endl)
@@ -23,24 +23,21 @@ int main(const int argc, const char* argv[])
         asmCode += line;
         asmCode += '\n';
     }
-    Lexer lexer(asmCode);
 
-    int i = 0;
-    /* while(i < 10) //int(lexer.getPosition()) < asmCode.length()) */
-    Token token;
-    while(token.Type != TokenType::END_OF_FILE)
+    std::istringstream inputStream(asmCode);
+    Lexer lexer(inputStream);
+    std::vector<Token> tokens = lexer.tokenize();
+
+    for(const Token& token : tokens)
     {
-        token = lexer.nextToken();
-        if(token.Type != TokenType::WHITESPACE)
-          std::cout << "Type: " << static_cast<int>(token.Type) << " , Lexeme: " << token.Literal << std::endl;
-        i++;
+        std::cout << "Type: " << static_cast<int>(token.m_Type) << " , Lexeme: " << token.lexeme << std::endl;
     }
 
     // End program
     return 0;
 }
 
-/**
+/*
 Copyright (C) 2023 Lysus
 
 cpp_LPUAssembler
