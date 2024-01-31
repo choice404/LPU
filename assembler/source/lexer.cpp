@@ -128,6 +128,11 @@ Token Lexer::nextToken()
             tok.Literal = readImmediate();
             tok.Type = TokenType::IMMEDIATE;
         }
+        else if(this->m_Ch == 0)
+        {
+            tok.Literal = "";
+            tok.Type = TokenType::END_OF_FILE;
+        }
         else
         {
             tok.Literal = this->m_Ch;
@@ -180,7 +185,7 @@ Token createToken(TokenType type, std::string literal)
  */
 bool Lexer::isLetter(char ch)
 {
-    return((ch > 'a' && ch < 'z') || (ch > 'A' && ch < 'Z'));
+    return((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'));
 }
 
 /**
@@ -264,7 +269,12 @@ std::string Lexer::readRegister()
 std::string Lexer::readLabel()
 {
     size_t position = this->m_Position;
+    this->readChar();
     while(this->isLetter(this->m_Ch) || this->isDigit(this->m_Ch))
+    {
+        this->readChar();
+    }
+    if(this->peekChar() == ':')
     {
         this->readChar();
     }
@@ -313,7 +323,7 @@ std::string Lexer::readWord()
     {
         this->readChar();
     }
-    return this->m_Input.substr(position - 1, this->m_Position - (position - 1));
+    return this->m_Input.substr(position, this->m_Position - position);
 }
 
 /**
