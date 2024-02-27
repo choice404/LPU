@@ -1,8 +1,8 @@
 # Makefile for Austin Choi's braifuck compiler
 
 MAIN		= ./main.cpp
-INCLUDES	= ./source/ISA.cpp ./source/lexer.cpp
-OUTFILE		= ./lpuAssembler
+INCLUDES	= ./source/lexer.cpp
+OUTFILE		= ./lpu
 
 all: a.out
 
