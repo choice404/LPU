@@ -115,13 +115,9 @@ Token Lexer::nextToken()
         {
           tok.Literal = readWord();
           if(this->peekChar() == ':')
-          {
               tok.Type = TokenType::LABEL;
-          }
           else
-          {
               tok.Type = TokenType::INSTRUCTION;
-          }
         }
         else if(this->isDigit(this->m_Ch))
         {
@@ -154,13 +150,9 @@ Token Lexer::nextToken()
 void Lexer::readChar()
 {
     if(this->m_NextPosition >= this->m_Input.length())
-    {
         this->m_Ch = 0;
-    }
     else
-    {
         this->m_Ch = this->m_Input[this->m_NextPosition];
-    }
     this->m_Position = this->m_NextPosition++;
 }
 
@@ -206,13 +198,9 @@ bool Lexer::isDigit(char ch)
 char Lexer::peekChar()
 {
     if(this->m_NextPosition >= this->m_Input.length())
-    {
         return 0;
-    }
     else
-    {
         return this->m_Input[this->m_NextPosition];
-    }
 }
 
 /**
@@ -224,9 +212,7 @@ std::string Lexer::readImmediate()
 {
     size_t position = this->m_Position;
     while(this->isDigit(this->m_Ch))
-    {
         this->readChar();
-    }
     return this->m_Input.substr(position, this->m_Position - position);
 }
 
@@ -239,9 +225,7 @@ std::string Lexer::readInstruction()
 {
     size_t position = this->m_Position;
     while(this->isLetter(this->m_Ch) || this->isDigit(this->m_Ch))
-    {
         this->readChar();
-    }
     return this->m_Input.substr(position, this->m_Position - position);
 }
 
@@ -255,9 +239,7 @@ std::string Lexer::readRegister()
     size_t position = this->m_Position;
     this->readChar();
     while(this->isDigit(this->m_Ch))
-    {
         this->readChar();
-    }
     return this->m_Input.substr(position, this->m_Position - position);
 }
 
@@ -271,13 +253,9 @@ std::string Lexer::readLabel()
     size_t position = this->m_Position;
     this->readChar();
     while(this->isLetter(this->m_Ch) || this->isDigit(this->m_Ch))
-    {
         this->readChar();
-    }
     if(this->peekChar() == ':')
-    {
         this->readChar();
-    }
     return this->m_Input.substr(position, this->m_Position - position);
 }
 
@@ -290,9 +268,7 @@ std::string Lexer::readComment()
 {
     size_t position = this->m_Position;
     while(this->m_Ch != '\n' && this->m_Ch != 0)
-    {
         this->readChar();
-    }
     return this->m_Input.substr(position, this->m_Position - position);
 }
 
@@ -305,9 +281,7 @@ std::string Lexer::readConstant()
 {
     size_t position = this->m_Position;
     while(this->isDigit(this->m_Ch))
-    {
         this->readChar();
-    }
     return this->m_Input.substr(position, this->m_Position - position);
 }
 
@@ -320,9 +294,7 @@ std::string Lexer::readWord()
 {
     size_t position = this->m_Position;
     while(this->isLetter(this->m_Ch) || this->isDigit(this->m_Ch))
-    {
         this->readChar();
-    }
     return this->m_Input.substr(position, this->m_Position - position);
 }
 
