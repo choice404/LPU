@@ -10,9 +10,9 @@
 
 LPU (Lysus Processing Unit) is an 8 bit Havard architecture CPU built inside of Minecraft using redstone mechanics to simulate binary logic. This will be a 4 stage pipelined CPU with a 2 byte [instruction set architecture](https://docs.google.com/spreadsheets/d/1FjiQlwFlFFbpPNQc1175PTzBfl2Y6gQHL5OqTxm_v3Y/edit?usp=sharing).
 
-In this project there will also be an external assembler that will take assembly code written using this instruction set to the LPU machine code as well as a compiler for a custom c styled language called CMine that will transpile to that assembly language then be assembled into the machine code to be used by the CPU.
+In this project there will also be an external assembler that will take assembly code written using this instruction set to the LPU machine code as well as a compiler for a custom c styled language called Craft-C (tentative name) that will transpile to that assembly language then be assembled into the machine code to be used by the CPU.
 
-As of now, the primary focus will be spent on finishing the CPU then finishig the assembler. CMine will be worked on once those 2 parts of this project are completed
+As of now, the primary focus will be spent on finishing the CPU then finishig the assembler. Craft-C will be worked on once those 2 parts of this project are completed
 
 ## The Processor
 
@@ -24,8 +24,8 @@ So far the ALU, Registers, Instruction decoders, flag registers, and branch deco
 
 Reference the [To do](#to-do) for a full list of what still needs to be completed
 
-Specs
-- 8 bit CCA ALU
+Current Specs
+- 8 bit ALU
 - 16 byte Register File
 
 ## Instruction Set
@@ -59,9 +59,9 @@ make
 - Assembler
     - [ ] Finish Parser (syntatical analysis)
     - [ ] Study and work on optimization techniques
-    - [ ] Keep on learning about compilers and assemblers (currently learning with the dragon book and the edx course on compilers)
+    - [ ] Keep on learning about compilers and assemblers
 
-- CMine
+- Craft-C
     - [ ] Yeah not gonna deal with this until the other stuff are done tbh lol
 
 Copyright &copy; 2024 Austin Choi
